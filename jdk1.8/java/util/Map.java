@@ -299,6 +299,9 @@ public interface Map<K,V> {
      *         specified map contains null keys or values
      * @throws IllegalArgumentException if some property of a key or value in
      *         the specified map prevents it from being stored in this map
+     *
+     *
+     * 把给定的map添加到当前的map中
      */
     void putAll(Map<? extends K, ? extends V> m);
 
@@ -308,6 +311,9 @@ public interface Map<K,V> {
      *
      * @throws UnsupportedOperationException if the <tt>clear</tt> operation
      *         is not supported by this map
+     *
+     *
+     * 清空map
      */
     void clear();
 
@@ -328,6 +334,8 @@ public interface Map<K,V> {
      * operations.
      *
      * 返回以键为视角的集合，该集合支持删除映射，但不支持增加映射
+     *
+     *
      * @return a set view of the keys contained in this map
      */
     Set<K> keySet();
@@ -345,6 +353,7 @@ public interface Map<K,V> {
      * <tt>retainAll</tt> and <tt>clear</tt> operations.  It does not
      * support the <tt>add</tt> or <tt>addAll</tt> operations.
      *
+     * 返回以值为视角的列表，该集合支持删除映射，但不支持增加映射
      * @return a collection view of the values contained in this map
      */
     Collection<V> values();
@@ -363,6 +372,7 @@ public interface Map<K,V> {
      * <tt>clear</tt> operations.  It does not support the
      * <tt>add</tt> or <tt>addAll</tt> operations.
      *
+     * 返回以值为视角的集合，该集合支持删除映射，但不支持增加映射
      * @return a set view of the mappings contained in this map
      */
     Set<Map.Entry<K, V>> entrySet();
@@ -377,7 +387,7 @@ public interface Map<K,V> {
      * modified after the entry was returned by the iterator, except through
      * the <tt>setValue</tt> operation on the map entry.
      *
-     * 键值对
+     * 键值对 (条目)
      * @see Map#entrySet()
      * @since 1.2
      */
@@ -389,6 +399,8 @@ public interface Map<K,V> {
          * @throws IllegalStateException implementations may, but are not
          *         required to, throw this exception if the entry has been
          *         removed from the backing map.
+         *
+         * 返回该映射的key
          */
         K getKey();
 
@@ -401,6 +413,8 @@ public interface Map<K,V> {
          * @throws IllegalStateException implementations may, but are not
          *         required to, throw this exception if the entry has been
          *         removed from the backing map.
+         *
+         * 返回该映射的值
          */
         V getValue();
 
@@ -423,6 +437,8 @@ public interface Map<K,V> {
          * @throws IllegalStateException implementations may, but are not
          *         required to, throw this exception if the entry has been
          *         removed from the backing map.
+         *
+         * 以给定的值替换掉value
          */
         V setValue(V value);
 
@@ -477,10 +493,16 @@ public interface Map<K,V> {
          * @return a comparator that compares {@link Map.Entry} in natural order on key.
          * @see Comparable
          * @since 1.8
+         *
+         * 获得以key作为排序的规则的比较器
          */
         public static <K extends Comparable<? super K>, V> Comparator<Map.Entry<K,V>> comparingByKey() {
-            return (Comparator<Map.Entry<K, V>> & Serializable)
-                (c1, c2) -> c1.getKey().compareTo(c2.getKey());
+            return new Comparator<Entry<K, V>>() {
+                @Override
+                public int compare(Entry<K, V> c1, Entry<K, V> c2) {
+                    return c1.getKey().compareTo(c2.getKey());
+                }
+            };
         }
 
         /**
@@ -494,6 +516,8 @@ public interface Map<K,V> {
          * @return a comparator that compares {@link Map.Entry} in natural order on value.
          * @see Comparable
          * @since 1.8
+         *
+         * 获得以value为排序规则的比较器
          */
         public static <K, V extends Comparable<? super V>> Comparator<Map.Entry<K,V>> comparingByValue() {
             return (Comparator<Map.Entry<K, V>> & Serializable)
@@ -512,6 +536,8 @@ public interface Map<K,V> {
          * @param  cmp the key {@link Comparator}
          * @return a comparator that compares {@link Map.Entry} by the key.
          * @since 1.8
+         *
+         * 返回以给定的比较器作为key的排序规则用于为Entry排序的比较器
          */
         public static <K, V> Comparator<Map.Entry<K, V>> comparingByKey(Comparator<? super K> cmp) {
             Objects.requireNonNull(cmp);
@@ -531,6 +557,8 @@ public interface Map<K,V> {
          * @param  cmp the value {@link Comparator}
          * @return a comparator that compares {@link Map.Entry} by the value.
          * @since 1.8
+         *
+         * 返回以给定的比较器作为value的排序规则用于为Entry排序的比较器
          */
         public static <K, V> Comparator<Map.Entry<K, V>> comparingByValue(Comparator<? super V> cmp) {
             Objects.requireNonNull(cmp);
@@ -593,6 +621,8 @@ public interface Map<K,V> {
      * does not permit null keys
      * (<a href="{@docRoot}/java/util/Collection.html#optional-restrictions">optional</a>)
      * @since 1.8
+     *
+     * 返回给定的key对应的值，若不存在，则返回给定的默认值
      */
     default V getOrDefault(Object key, V defaultValue) {
         V v;
