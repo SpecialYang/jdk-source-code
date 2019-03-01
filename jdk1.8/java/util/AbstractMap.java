@@ -63,8 +63,9 @@ import java.util.Map.Entry;
  * @see Map
  * @see Collection
  * @since 1.2
+ *
+ * 实现Map接口的抽象Map类
  */
-
 public abstract class AbstractMap<K,V> implements Map<K,V> {
     /**
      * Sole constructor.  (For invocation by subclass constructors, typically
@@ -80,6 +81,8 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
      *
      * @implSpec
      * This implementation returns <tt>entrySet().size()</tt>.
+     *
+     * 通过entry的视角来计算映射的个数
      */
     public int size() {
         return entrySet().size();
@@ -171,6 +174,14 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
      *
      * @throws ClassCastException            {@inheritDoc}
      * @throws NullPointerException          {@inheritDoc}
+     *
+     * 注意这不是hashmap
+     * map大的方向是 存储key 与 value的映射关系
+     *
+     * 但并没有规定获取映射的方式，这里只是普通的遍历比较key，从而找到对应的映射
+     * 复杂度为O(n)
+     *
+     * 而基于hash的hashmap 可以快速定位到mapping，所以为O(1)
      */
     public V get(Object key) {
         Iterator<Entry<K,V>> i = entrySet().iterator();
@@ -292,6 +303,9 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
      * does not support the <tt>clear</tt> operation.
      *
      * @throws UnsupportedOperationException {@inheritDoc}
+     *
+     * 清空map
+     * 已entry的视角
      */
     public void clear() {
         entrySet().clear();
@@ -522,6 +536,8 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
      * @see Map.Entry#hashCode()
      * @see Object#equals(Object)
      * @see Set#equals(Object)
+     *
+     * 该抽象map的hash的值为：各个mapping的hashcode的总和
      */
     public int hashCode() {
         int h = 0;
@@ -568,6 +584,8 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
      * and values themselves are not cloned.
      *
      * @return a shallow copy of this map
+     *
+     * 浅复制
      */
     protected Object clone() throws CloneNotSupportedException {
         AbstractMap<?,?> result = (AbstractMap<?,?>)super.clone();
@@ -603,6 +621,8 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
      * <tt>Map.entrySet().toArray</tt>.
      *
      * @since 1.6
+     *
+     * 普通entry实现类
      */
     public static class SimpleEntry<K,V>
         implements Entry<K,V>, java.io.Serializable

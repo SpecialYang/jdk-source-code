@@ -165,6 +165,11 @@ package java.io;
  * @see java.io.ObjectInput
  * @see java.io.Externalizable
  * @since   JDK1.1
+ *
+ * 标记接口，用于JVM做检查
+ * 实现该接口的子类都可以序列化，但仍需子类自己提供方法用于怎么处理自己的域
+ *
+ * 同时还要确保要有无参构造方法，因为该方法会在反序列化时用于初始化域
  */
 public interface Serializable {
 }

@@ -50,6 +50,12 @@ import java.util.function.Consumer;
  * @see ListIterator
  * @see Iterable
  * @since 1.2
+ *
+ *
+ * 迭代器，Enumeration的替代品
+ * 与Enumeration有2处不同：
+ * 1. 可以在迭代中通过remove方法来删除序列中的元素
+ * 2. 改善了方法名，更加明确
  */
 public interface Iterator<E> {
     /**
