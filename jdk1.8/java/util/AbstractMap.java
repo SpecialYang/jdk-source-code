@@ -726,6 +726,8 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
          *
          * @return the hash code value for this map entry
          * @see    #equals
+         *
+         * entry的hash是key的hash与value的hash的异或
          */
         public int hashCode() {
             return (key   == null ? 0 :   key.hashCode()) ^
@@ -752,6 +754,7 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
      * convenient in methods that return thread-safe snapshots of
      * key-value mappings.
      *
+     * 利用final特性，实现基于快照形式的线程安全的entry
      * @since 1.6
      */
     public static class SimpleImmutableEntry<K,V>

@@ -134,6 +134,11 @@ import sun.misc.SharedSecrets;
  * @see     TreeMap
  * @see     Hashtable
  * @since   1.2
+ *
+ * 基于哈希表的Map接口实现
+ *
+ * 利用hash来确定放置和获取mapping的位置的map
+ *
  */
 public class HashMap<K,V> extends AbstractMap<K,V>
     implements Map<K,V>, Cloneable, Serializable {
