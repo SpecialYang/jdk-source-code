@@ -237,6 +237,8 @@ public class HashMap<K,V> extends AbstractMap<K,V>
 
     /**
      * The default initial capacity - MUST be a power of two.
+     *
+     * 默认初始容量，未指定情况下使用，16，长度必须为2的幂次方
      */
     static final int DEFAULT_INITIAL_CAPACITY = 1 << 4; // aka 16
 
@@ -274,17 +276,22 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      * (Otherwise the table is resized if too many nodes in a bin.)
      * Should be at least 4 * TREEIFY_THRESHOLD to avoid conflicts
      * between resizing and treeification thresholds.
+     *
+     * 容量大于等于64，树化门槛激活
      */
     static final int MIN_TREEIFY_CAPACITY = 64;
 
     /**
      * Basic hash bin node, used for most entries.  (See below for
      * TreeNode subclass, and in LinkedHashMap for its Entry subclass.)
+     *
+     * HashMap的条目结构
      */
     static class Node<K,V> implements Map.Entry<K,V> {
         final int hash;
         final K key;
         V value;
+        //因为冲突的解决方案是链地址法
         Node<K,V> next;
 
         Node(int hash, K key, V value, Node<K,V> next) {
@@ -298,6 +305,10 @@ public class HashMap<K,V> extends AbstractMap<K,V>
         public final V getValue()      { return value; }
         public final String toString() { return key + "=" + value; }
 
+        /**
+         * entry的哈希为 key的hash与value的哈希的异或
+         * @return
+         */
         public final int hashCode() {
             return Objects.hashCode(key) ^ Objects.hashCode(value);
         }
@@ -338,6 +349,13 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      * cheapest possible way to reduce systematic lossage, as well as
      * to incorporate impact of the highest bits that would otherwise
      * never be used in index calculations because of table bounds.
+     *
+     * 计算key的哈希值并将该值的高位散列到低位
+     * 我们采用了2幂次方来作为掩码，所以当处理具有连续值key时
+     * 会加大碰撞几率，所以额外利用高位来对哈希值作进一步处理，
+     * 使得散列值尽可能合理分布
+     *
+     * key的hash值的高16位与低16位异或
      */
     static final int hash(Object key) {
         int h;
