@@ -334,7 +334,9 @@ public class Hashtable<K,V>
     public synchronized boolean containsKey(Object key) {
         Entry<?,?> tab[] = table;
         int hash = key.hashCode();
+        //定位槽位
         int index = (hash & 0x7FFFFFFF) % tab.length;
+        //遍历链表
         for (Entry<?,?> e = tab[index] ; e != null ; e = e.next) {
             if ((e.hash == hash) && e.key.equals(key)) {
                 return true;
@@ -1323,7 +1325,9 @@ public class Hashtable<K,V>
     private class Enumerator<T> implements Enumeration<T>, Iterator<T> {
         Entry<?,?>[] table = Hashtable.this.table;
         int index = table.length;
+        //相当于 next 条目
         Entry<?,?> entry;
+        // 相当于current 条目
         Entry<?,?> lastReturned;
         int type;
 
@@ -1340,11 +1344,17 @@ public class Hashtable<K,V>
          */
         protected int expectedModCount = modCount;
 
+        /**
+         * 指定是否兼容iterator
+         * @param type
+         * @param iterator
+         */
         Enumerator(int type, boolean iterator) {
             this.type = type;
             this.iterator = iterator;
         }
 
+        //看next是不是为空，为空还有补救的机会
         public boolean hasMoreElements() {
             Entry<?,?> e = entry;
             int i = index;
@@ -1358,6 +1368,10 @@ public class Hashtable<K,V>
             return e != null;
         }
 
+        /**
+         * 返回当前的next, 并更新next的值
+         * @return
+         */
         @SuppressWarnings("unchecked")
         public T nextElement() {
             Entry<?,?> et = entry;
@@ -1372,22 +1386,26 @@ public class Hashtable<K,V>
             if (et != null) {
                 Entry<?,?> e = lastReturned = entry;
                 entry = e.next;
+                //根据type不同返回不同的值
                 return type == KEYS ? (T)e.key : (type == VALUES ? (T)e.value : (T)e);
             }
             throw new NoSuchElementException("Hashtable Enumerator");
         }
 
+        //兼容Iterator
         // Iterator methods
         public boolean hasNext() {
             return hasMoreElements();
         }
 
+        //兼容Iterator
         public T next() {
             if (modCount != expectedModCount)
                 throw new ConcurrentModificationException();
             return nextElement();
         }
 
+        //remove方法 Iterator 特有
         public void remove() {
             if (!iterator)
                 throw new UnsupportedOperationException();
@@ -1396,18 +1414,23 @@ public class Hashtable<K,V>
             if (modCount != expectedModCount)
                 throw new ConcurrentModificationException();
 
+            //加锁同步删除
             synchronized(Hashtable.this) {
+                //重新定位
                 Entry<?,?>[] tab = Hashtable.this.table;
                 int index = (lastReturned.hash & 0x7FFFFFFF) % tab.length;
 
                 @SuppressWarnings("unchecked")
                 Entry<K,V> e = (Entry<K,V>)tab[index];
+                //链表中查找，prev为当前节点的前驱节点
                 for(Entry<K,V> prev = null; e != null; prev = e, e = e.next) {
                     if (e == lastReturned) {
                         modCount++;
                         expectedModCount++;
+                        //头结点
                         if (prev == null)
                             tab[index] = e.next;
+                        //非头结点
                         else
                             prev.next = e.next;
                         count--;
