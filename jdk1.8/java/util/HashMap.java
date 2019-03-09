@@ -728,6 +728,9 @@ public class HashMap<K,V> extends AbstractMap<K,V>
         //检查是否要扩容
         if (++size > threshold)
             resize();
+        //创建节点后触发该方法
+        //主要用于基于访问顺序模型时
+        //根据用户自定义策略处理过时节点
         afterNodeInsertion(evict);
         return null;
     }

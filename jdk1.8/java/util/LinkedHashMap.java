@@ -213,24 +213,47 @@ public class LinkedHashMap<K,V>
      * for access-order, <tt>false</tt> for insertion-order.
      *
      * @serial
+     *
+     * 用于声明该map是否采用 访问顺序
+     * 注意使用了final关键字，意味着初始化指定后无法更改
      */
     final boolean accessOrder;
 
     // internal utilities
 
-    // link at the end of list
+    /**
+     * link at the end of list
+     * 尾插法
+     *
+     * 哈希表中添加新的entry时，会调用该方法
+     * 也就说，put操作如果是插入新的entry，则会触发该方法
+     *
+     * 用于将新创建的节点连接到双向链表的末尾
+     *
+     * 维持链表末尾为最新的节点
+     * 更新head, tail指针
+     * @param p
+     */
     private void linkNodeLast(LinkedHashMap.Entry<K,V> p) {
         LinkedHashMap.Entry<K,V> last = tail;
         tail = p;
+        // tail 为空，表明头部也为空，即为空链表
         if (last == null)
             head = p;
         else {
+            // 否则就是正常的拼接情况
             p.before = last;
             last.after = p;
         }
     }
 
     // apply src's links to dst
+
+    /**
+     * 将src节点替换为dst节点
+     * @param src
+     * @param dst
+     */
     private void transferLinks(LinkedHashMap.Entry<K,V> src,
                                LinkedHashMap.Entry<K,V> dst) {
         LinkedHashMap.Entry<K,V> b = dst.before = src.before;
@@ -247,11 +270,24 @@ public class LinkedHashMap<K,V>
 
     // overrides of HashMap hook methods
 
+    /**
+     * 重新初始化map
+     */
     void reinitialize() {
         super.reinitialize();
         head = tail = null;
     }
 
+    /**
+     * 创建新的节点
+     *
+     * 并拼接到链表尾部
+     * @param hash
+     * @param key
+     * @param value
+     * @param e
+     * @return
+     */
     Node<K,V> newNode(int hash, K key, V value, Node<K,V> e) {
         LinkedHashMap.Entry<K,V> p =
             new LinkedHashMap.Entry<K,V>(hash, key, value, e);
@@ -259,6 +295,12 @@ public class LinkedHashMap<K,V>
         return p;
     }
 
+    /**
+     * HashMap的node 与 LinkedHashMap的entry 的替换
+     * @param p
+     * @param next
+     * @return
+     */
     Node<K,V> replacementNode(Node<K,V> p, Node<K,V> next) {
         LinkedHashMap.Entry<K,V> q = (LinkedHashMap.Entry<K,V>)p;
         LinkedHashMap.Entry<K,V> t =
@@ -280,6 +322,10 @@ public class LinkedHashMap<K,V>
         return t;
     }
 
+    /**
+     * 删除指定节点触发该方法
+     * @param e
+     */
     void afterNodeRemoval(Node<K,V> e) { // unlink
         LinkedHashMap.Entry<K,V> p =
             (LinkedHashMap.Entry<K,V>)e, b = p.before, a = p.after;
@@ -294,6 +340,10 @@ public class LinkedHashMap<K,V>
             a.before = b;
     }
 
+    /**
+     * 插入节点后触发该方法
+     * @param evict
+     */
     void afterNodeInsertion(boolean evict) { // possibly remove eldest
         LinkedHashMap.Entry<K,V> first;
         if (evict && (first = head) != null && removeEldestEntry(first)) {
@@ -302,27 +352,50 @@ public class LinkedHashMap<K,V>
         }
     }
 
+    /**
+     * 节点访问后触发该方法
+     * 用于调整双向链表
+     *
+     * 其实就是先从链表中删除，随后添加到末尾
+     * @param e
+     */
     void afterNodeAccess(Node<K,V> e) { // move node to last
         LinkedHashMap.Entry<K,V> last;
+        //使用的是访问顺序，双向链表中最后一个节点不是e
         if (accessOrder && (last = tail) != e) {
+            //求出此节点的前驱和后继
             LinkedHashMap.Entry<K,V> p =
                 (LinkedHashMap.Entry<K,V>)e, b = p.before, a = p.after;
             p.after = null;
+            //如果前驱为空，说明要删除的是头结点
             if (b == null)
+                //更新头结点
                 head = a;
             else
+                //前驱的后继为e的后继
                 b.after = a;
+            //后继不为空
             if (a != null)
+                //更新后继节点的前驱为e的前驱
                 a.before = b;
             else
+                /*
+                    后继为空，说明要删除的节点是尾节点
+                    所以last为尾节点的前驱节点
+                 */
                 last = b;
+            //last为空，表明双向链表为空
             if (last == null)
+                //更新head
                 head = p;
             else {
+                //节点插入到末尾
                 p.before = last;
                 last.after = p;
             }
+            //更新tail
             tail = p;
+            //结构次数修改增1
             ++modCount;
         }
     }
@@ -434,6 +507,9 @@ public class LinkedHashMap<K,V>
      * possible that the map explicitly maps the key to {@code null}.
      * The {@link #containsKey containsKey} operation may be used to
      * distinguish these two cases.
+     *
+     * 相对于HashMap的get来说，其实这里处理仅仅添加了钩子函数
+     * 即获取值后，根据当前是否是基于访问顺序来调用afterNodeAccess函数
      */
     public V get(Object key) {
         Node<K,V> e;
@@ -446,6 +522,8 @@ public class LinkedHashMap<K,V>
 
     /**
      * {@inheritDoc}
+     *
+     * 若key不存在或则key对应的value为空时，返回默认值
      */
     public V getOrDefault(Object key, V defaultValue) {
        Node<K,V> e;
