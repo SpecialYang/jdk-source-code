@@ -177,6 +177,8 @@ public class Hashtable<K,V>
      * @param      loadFactor        the load factor of the hashtable.
      * @exception  IllegalArgumentException  if the initial capacity is less
      *             than zero, or if the load factor is nonpositive.
+     *
+     * 没有对table的长度作限制
      */
     public Hashtable(int initialCapacity, float loadFactor) {
         if (initialCapacity < 0)
@@ -188,6 +190,7 @@ public class Hashtable<K,V>
         if (initialCapacity==0)
             initialCapacity = 1;
         this.loadFactor = loadFactor;
+        //直接为哈希表分配空间
         table = new Entry<?,?>[initialCapacity];
         threshold = (int)Math.min(initialCapacity * loadFactor, MAX_ARRAY_SIZE + 1);
     }
@@ -359,6 +362,8 @@ public class Hashtable<K,V>
      *         {@code null} if this map contains no mapping for the key
      * @throws NullPointerException if the specified key is null
      * @see     #put(Object, Object)
+     *
+     * 因为该map不允许空key和空value，所以可以通过返回null来判断是否有该key
      */
     @SuppressWarnings("unchecked")
     public synchronized V get(Object key) {
@@ -394,24 +399,28 @@ public class Hashtable<K,V>
         Entry<?,?>[] oldMap = table;
 
         // overflow-conscious code
+        // 新的容量为老的容量的2倍 + 1
         int newCapacity = (oldCapacity << 1) + 1;
         if (newCapacity - MAX_ARRAY_SIZE > 0) {
+            //不扩容
             if (oldCapacity == MAX_ARRAY_SIZE)
                 // Keep running with MAX_ARRAY_SIZE buckets
                 return;
+            //过大，回退为MAX_ARRAY_SIZE
             newCapacity = MAX_ARRAY_SIZE;
         }
+        //生成新的hashmap
         Entry<?,?>[] newMap = new Entry<?,?>[newCapacity];
 
         modCount++;
         threshold = (int)Math.min(newCapacity * loadFactor, MAX_ARRAY_SIZE + 1);
         table = newMap;
-
+        //从哈希表末尾一一rehash
         for (int i = oldCapacity ; i-- > 0 ;) {
             for (Entry<K,V> old = (Entry<K,V>)oldMap[i] ; old != null ; ) {
                 Entry<K,V> e = old;
                 old = old.next;
-
+                //计算新的散列值，头插法插入
                 int index = (e.hash & 0x7FFFFFFF) % newCapacity;
                 e.next = (Entry<K,V>)newMap[index];
                 newMap[index] = e;
@@ -420,6 +429,7 @@ public class Hashtable<K,V>
     }
 
     private void addEntry(int hash, K key, V value, int index) {
+        //结构次数增1
         modCount++;
 
         Entry<?,?> tab[] = table;
@@ -427,6 +437,7 @@ public class Hashtable<K,V>
             // Rehash the table if the threshold is exceeded
             rehash();
 
+            //重新获取散列位置
             tab = table;
             hash = key.hashCode();
             index = (hash & 0x7FFFFFFF) % tab.length;
@@ -435,6 +446,7 @@ public class Hashtable<K,V>
         // Creates the new entry.
         @SuppressWarnings("unchecked")
         Entry<K,V> e = (Entry<K,V>) tab[index];
+        //用 头插法 将新的entry加入冲突链表中
         tab[index] = new Entry<>(hash, key, value, e);
         count++;
     }
@@ -455,6 +467,8 @@ public class Hashtable<K,V>
      *               <code>null</code>
      * @see     Object#equals(Object)
      * @see     #get(Object)
+     *
+     * 更新key与value的映射关系，但key与value都不为空
      */
     public synchronized V put(K key, V value) {
         // Make sure the value is not null
@@ -465,17 +479,19 @@ public class Hashtable<K,V>
         // Makes sure the key is not already in the hashtable.
         Entry<?,?> tab[] = table;
         int hash = key.hashCode();
+        //散列，确定位置
         int index = (hash & 0x7FFFFFFF) % tab.length;
         @SuppressWarnings("unchecked")
         Entry<K,V> entry = (Entry<K,V>)tab[index];
         for(; entry != null ; entry = entry.next) {
             if ((entry.hash == hash) && entry.key.equals(key)) {
+                //有key时 更新值，返回旧值
                 V old = entry.value;
                 entry.value = value;
                 return old;
             }
         }
-
+        //说明没有key，插入新的mapping
         addEntry(hash, key, value, index);
         return null;
     }
@@ -488,6 +504,8 @@ public class Hashtable<K,V>
      * @return  the value to which the key had been mapped in this hashtable,
      *          or <code>null</code> if the key did not have a mapping
      * @throws  NullPointerException  if the key is <code>null</code>
+     *
+     * 返回null意味着没有该key
      */
     public synchronized V remove(Object key) {
         Entry<?,?> tab[] = table;
@@ -498,9 +516,11 @@ public class Hashtable<K,V>
         for(Entry<K,V> prev = null ; e != null ; prev = e, e = e.next) {
             if ((e.hash == hash) && e.key.equals(key)) {
                 modCount++;
+                //不是头结点的情况
                 if (prev != null) {
                     prev.next = e.next;
                 } else {
+                    //头结点的情况
                     tab[index] = e.next;
                 }
                 count--;
@@ -532,6 +552,7 @@ public class Hashtable<K,V>
     public synchronized void clear() {
         Entry<?,?> tab[] = table;
         modCount++;
+        //倒着清理
         for (int index = tab.length; --index >= 0; )
             tab[index] = null;
         count = 0;
@@ -1284,6 +1305,7 @@ public class Hashtable<K,V>
         }
 
         public V setValue(V value) {
+            //不允许value为null
             if (value == null)
                 throw new NullPointerException();
 
