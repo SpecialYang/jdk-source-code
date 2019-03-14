@@ -286,8 +286,7 @@ import sun.misc.Unsafe;
  * @since 1.5
  * @author Doug Lea
  */
-public abstract class AbstractQueuedSynchronizer
-    extends AbstractOwnableSynchronizer
+public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchronizer
     implements java.io.Serializable {
 
     private static final long serialVersionUID = 7373984972572414691L;
@@ -376,22 +375,58 @@ public abstract class AbstractQueuedSynchronizer
      * Scherer and Michael Scott, along with members of JSR-166
      * expert group, for helpful ideas, discussions, and critiques
      * on the design of this class.
+     *
+     * 这个等待队列是CLH锁队列的变形。CLH锁通常被用来作为自旋锁。我们反而用他们
+     * 来阻塞同步器，我们同样还在节点中保存其前驱节点中线程的一些控制信息。
+     *
+     * 每个节点中"status"域用来跟踪线程是否需要阻塞。一个节点在其前驱节点释放锁时会被通知
+     * 否则队列中每个节点都会被用作保存单个等待线程的特定通知样式的监视器
+     *
+     * "status"不能控制线程是否被授予锁。如果线程在队列头部，它可能尝试去获取锁
+     * 但是他并保证一定能获取到锁，只是给予争取的权利。因此已经释放锁的线程需要重新竞争
+     *
+     * 入队只需将节点拼接到末尾，出队只需更新头部节点
+     * 插入CLH队列只需要对“尾部”进行单个原子操作，因此存在从未排队到排队的简单原子操作。
+     * 同样，出列只涉及更新“头部”。但是，节点需要更多的工作来确定他们的后继者是谁，
+     * 部分是为了处理由于超时和中断而可能的取消。
+     *
+     * prev指针(链接前驱节点)主要应用在节点取消的情况。当一个节点取消时，就会从队列中
+     * 将节点删除，同时其后继节点与其前驱节点建立关系
+     *
+     * next指针(链接后继节点)主要用来实现同步阻塞语义。每个节点的线程id被保存在自己的节点中
+     * 因此当前驱节点遍历其next指针即可知道唤醒的下一个节点以确定是哪个线程
+     *
+     * CLH队列的虚拟头结点在第一次争用时构建和设置head和tail
+     *
+     * 等待条件对象的所有线程使用相同的节点，不过使用的是另外的链接
+     *
+     * 等待时，节点被插入到条件队列里。被唤醒时，节点从条件队列里被转移到主队列里
+     *
+     * status的特殊值可以用来标记当前节点在哪个队列中
+     *
      */
     static final class Node {
         /** Marker to indicate a node is waiting in shared mode */
+        // 表明节点处于共享模式中的等待
         static final Node SHARED = new Node();
         /** Marker to indicate a node is waiting in exclusive mode */
+        // 表明节点处于独占模式的等待
         static final Node EXCLUSIVE = null;
 
         /** waitStatus value to indicate thread has cancelled */
+        // 表明线程已取消
         static final int CANCELLED =  1;
         /** waitStatus value to indicate successor's thread needs unparking */
+        // 表明后继节点的线程需要处理
         static final int SIGNAL    = -1;
         /** waitStatus value to indicate thread is waiting on condition */
+        // 表明线程正在等待条件
         static final int CONDITION = -2;
         /**
          * waitStatus value to indicate the next acquireShared should
          * unconditionally propagate
+         *
+         * 表示下一个acquireShared应无条件传播
          */
         static final int PROPAGATE = -3;
 
@@ -428,6 +463,28 @@ public abstract class AbstractQueuedSynchronizer
          * The field is initialized to 0 for normal sync nodes, and
          * CONDITION for condition nodes.  It is modified using CAS
          * (or when possible, unconditional volatile writes).
+         *
+         * 状态字段，具有volatile读写语义，仅可能取以下值
+         * SIGNAL：此节点的后继节点被（或将要）被阻塞，因此当前节点释放或取消时
+         * 需要通知其后继节点。为了避免竞争，acquire必须首先表明他们需要信号，然后
+         * 尝试以原子操作的形式获取，然后失败，阻塞
+         *
+         * CANCELLED：当前节点因为超时或者中断被取消。节点不会从这个状态变为其他
+         * 这个状态的节点不会再次阻塞
+         *
+         * CONDITION：表明此节点当前处于条件队列中，在转移之前，
+         * 它不会被用作为同步队列中的节点
+         *
+         * PROPAGATE：releaseShared 应该传播到其他节点。在doReleaseShared中
+         * 设置(仅限头结点)以确保继续传播，即使其他操作已经介入
+         *
+         * 这些状态的取值以数字形式排列以简化使用，非负值意味着不需要发信号
+         *
+         * 对于同步队列中节点，状态初始值为0
+         *
+         * 对于条件队列中节点，状态初始值为CONDITION
+         *
+         * 状态改变由CAS操作或者volatile的写操作完成
          */
         volatile int waitStatus;
 
