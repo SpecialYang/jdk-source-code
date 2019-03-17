@@ -727,9 +727,11 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
     private Node addWaiter(Node mode) {
         Node node = new Node(Thread.currentThread(), mode);
         // Try the fast path of enq; backup to full enq on failure
+        // 为了快速插入队列，否则采用循环cas的方式
         Node pred = tail;
         if (pred != null) {
             node.prev = pred;
+            // CAS更新尾部
             if (compareAndSetTail(pred, node)) {
                 pred.next = node;
                 return node;
@@ -743,6 +745,8 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
      * Sets head of queue to be node, thus dequeuing. Called only by
      * acquire methods.  Also nulls out unused fields for sake of GC
      * and to suppress unnecessary signals and traversals.
+     *
+     * 设置队列的头节点，从而可以出列。 仅通过获取方法调用
      *
      * @param node the node
      */
@@ -1315,6 +1319,11 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
      * @param arg the acquire argument.  This value is conveyed to
      *        {@link #tryAcquire} but is otherwise uninterpreted and
      *        can represent anything you like.
+     *
+     * 以独占模式来获取，忽略中断。至少调用一次tryAcquire，
+     * 如果返回成功则获取。否则线程入队列排队，可能反复阻塞和解除阻塞，
+     * 直到调用tryAcquire成功。
+     * 此方法可用于实现Lock.lock方法。
      */
     public final void acquire(int arg) {
         if (!tryAcquire(arg) &&
